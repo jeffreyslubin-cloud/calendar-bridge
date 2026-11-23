@@ -463,3 +463,27 @@ select {
     font-size: 11px;
     line-height: 1.4;
 }
+
+/* Read-only sync preview, contained in the existing scrollable form. */
+#googlePreviewButton {
+    width: 100%;
+    text-align: center;
+    font-weight: 600;
+    background: var(--surface);
+}
+.preview-result {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+.preview-result[hidden] { display: none; }
+.preview-result strong { font-size: 13px; }
+.preview-result ul { padding-left: 17px; }
+.preview-result li { margin: 3px 0; }
+.preview-result p { color: var(--muted); line-height: 1.4; }
