@@ -134,8 +134,13 @@ class CalendarLiberator {
                 throw new Error('No valid events with dates and times were available to export.');
             }
             
-            this.sendProgress(this.destination === 'publish' ? 'Publishing file...' : 'Downloading file...', 90);
-            const delivery = await this.deliverICS(icsContent);
+            // Preview mode returns the same validated ICS records as the existing
+            // export, but never downloads, publishes, or mutates any calendar.
+            this.sendProgress(this.destination === 'preview' ? 'Preparing read-only preview...' :
+                this.destination === 'publish' ? 'Publishing file...' : 'Downloading file...', 90);
+            const delivery = this.destination === 'preview'
+                ? { delivery: 'preview', ics: icsContent }
+                : await this.deliverICS(icsContent);
             
             this.sendProgress('Restoring original view...', 95);
             await this.restoreOriginalView();
