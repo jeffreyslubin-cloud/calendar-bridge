@@ -6,7 +6,8 @@ class CalendarLiberator {
         this.originalView = null;
         this.allEvents = [];
         this.timezone = 'UTC';
-        this.currentWeek = 0; // -1, 0, 1, 2 (past, current, next, next)
+        this.currentWeek = 0;
+        this.exportDays = 90;
         this.includeDeclined = false;
         this.includeOOO = false;
         this.userEmail = null;
@@ -40,6 +41,7 @@ class CalendarLiberator {
                     this.includeDeclined = message.includeDeclined || false;
                     this.includeOOO = message.includeOOO || false;
                     this.destination = message.destination || 'download';
+                    this.exportDays = [28, 90, 180].includes(message.exportDays) ? message.exportDays : 90;
                     const result = await this.exportCalendar();
                     sendResponse(result);
                     break;
@@ -78,50 +80,35 @@ class CalendarLiberator {
             this.allEvents = [];
             this.incompleteDiagnostics = [];
             
-            // Calculate exact date range: 7 days back from today + today + 21 days forward = 28 days total
+            // Preserve seven days of history and include the chosen number
+            // of days starting today. Extra scan weeks cover weekday alignment.
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             this.startDate = new Date(today);
             this.startDate.setDate(today.getDate() - 7);
             this.endDate = new Date(today);
-            this.endDate.setDate(today.getDate() + 21);
+            this.endDate.setDate(today.getDate() + this.exportDays - 1);
             this.endDate.setHours(23, 59, 59, 999);
-            
-            console.log(`[CalendarLiberator] Target date range: ${this.startDate.toLocaleDateString()} to ${this.endDate.toLocaleDateString()} (28 days)`);
-            
-            // Collect events from 4 weeks with error recovery
-            // Note: We collect 4 full weeks to ensure we capture all events in the 28-day window
-            const weekTasks = [
-                { name: 'past week', offset: -1, progress: [20, 30] },
-                { name: 'current week', offset: 0, progress: [30, 45] },
-                { name: 'next week', offset: 1, progress: [45, 60] },
-                { name: 'second next week', offset: 2, progress: [60, 75] }
-            ];
-            
-            this.sendProgress('Going back one week...', 20);
+
+            const weekCount = Math.ceil((this.exportDays + 7) / 7) + 2;
+            console.log(`[CalendarBridge] Exporting ${this.exportDays} days ahead plus seven prior days across ${weekCount} weeks`);
+
+            this.sendProgress('Going back one week...', 18);
             await this.navigatePreviousWeek();
             this.currentWeek = -1;
-            
-            for (const task of weekTasks) {
-                try {
-                    this.sendProgress(`Collecting events from ${task.name}...`, task.progress[0]);
-                    
-                    if (task.offset > this.currentWeek) {
-                        while (this.currentWeek < task.offset) {
-                            await this.navigateNextWeek();
-                            this.currentWeek++;
-                        }
-                    }
-                    
-                    await this.collectCurrentWeekEvents();
-                    console.log(`[CalendarLiberator] Collected ${task.name}: ${this.allEvents.length} total events so far`);
-                    this.sendProgress(`Completed ${task.name}`, task.progress[1]);
-                    
-                } catch (error) {
-                    console.warn(`[CalendarLiberator] Error collecting ${task.name}:`, error.message);
+
+            for (let index = 0; index < weekCount; index++) {
+                const progress = 20 + Math.round(60 * index / weekCount);
+                this.sendProgress(`Collecting week ${index + 1} of ${weekCount}...`, progress);
+                if (index > 0) {
+                    await this.navigateNextWeek();
+                    this.currentWeek++;
                 }
+                // Stop on a failed week; do not silently export incomplete data.
+                await this.collectCurrentWeekEvents();
             }
-            
+            this.sendProgress(`Collected ${weekCount} weeks`, 80);
+
             const originalCount = this.allEvents.length;
             this.allEvents = this.allEvents.filter(event => {
                 const eventDate = this.parseEventDate(event);
@@ -131,12 +118,12 @@ class CalendarLiberator {
             
             const filteredCount = originalCount - this.allEvents.length;
             if (filteredCount > 0) {
-                console.log(`[CalendarLiberator] Filtered out ${filteredCount} events outside 28-day window`)
+                console.log(`[CalendarLiberator] Filtered out ${filteredCount} events outside selected date range`)
             }
             console.log(`[CalendarLiberator] Final event count: ${this.allEvents.length} events within date range`);
             
             if (this.allEvents.length === 0) {
-                throw new Error('No events found in the 28-day window. Please ensure you have events in your calendar and try again.');
+                throw new Error('No events found in the selected date range. Please ensure you have events in your calendar and try again.');
             }
             
             this.sendProgress('Generating ICS file...', 85);
@@ -193,7 +180,7 @@ class CalendarLiberator {
     // interactions while the export is running, and makes it visually clear
     // that the page is busy. Synthetic clicks issued by this content script
     // (view switching, week navigation) are unaffected. Progress feedback
-    // lives in the popup, so the overlay carries no text. A 60-second safety
+    // lives in the popup, so the overlay carries no text. A four-minute safety
     // timeout removes the overlay even if the export hangs.
     showExportOverlay() {
         this.hideExportOverlay();
@@ -211,9 +198,9 @@ class CalendarLiberator {
         document.body.appendChild(overlay);
 
         this.overlayTimeout = setTimeout(() => {
-            console.warn('[CalendarLiberator] Export overlay auto-removed after 60s timeout');
+            console.warn('[CalendarLiberator] Export overlay auto-removed after 240s timeout');
             this.hideExportOverlay();
-        }, 60000);
+        }, 240000);
     }
 
     hideExportOverlay() {
@@ -474,7 +461,7 @@ class CalendarLiberator {
             
         } catch (error) {
             console.warn('[CalendarLiberator] Error collecting events for current week:', error.message);
-            // Don't throw - continue with partial data
+            throw error;
         }
     }
 
