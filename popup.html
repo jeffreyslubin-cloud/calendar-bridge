@@ -74,6 +74,12 @@
         </div>
 
         <div class="field">
+            <label for="googleCalendarId">Google calendar to compare</label>
+            <input type="text" id="googleCalendarId" value="primary" placeholder="primary or calendar ID" spellcheck="false">
+            <small>“primary” checks your main Google calendar. For a separate Work Schedule calendar, enter its calendar ID from Google Calendar settings. Preview does not change either calendar.</small>
+        </div>
+        <section id="previewResult" class="preview-result" hidden aria-live="polite"></section>
+        <div class="field">
             <label for="timezone">Timezone</label>
             <!-- Values are real IANA zones: a bare "UTC+1" is ambiguous with
                  respect to DST. Labels get the current offset appended by popup.js. -->
@@ -130,6 +136,7 @@
           <p id="errorText" class="error" hidden></p>
           <button id="downloadDiagnostics" type="button" hidden>Download omitted-event diagnostics (local JSON)</button>
           <button id="runButton" class="primary">Export calendar</button>
+          <button id="googlePreviewButton" type="button" class="google-connect-button">Preview Google sync (no changes)</button>
       </div>
     </main>
 
@@ -151,5 +158,7 @@
     <script src="host-check.js"></script>
     <script src="popup.js"></script>
     <script src="google-connection.js"></script>
+    <script src="preview-compare.js"></script>
+    <script src="google-preview.js"></script>
 </body>
 </html>
