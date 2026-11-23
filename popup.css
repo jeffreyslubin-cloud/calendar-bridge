@@ -439,3 +439,27 @@ select {
 .help:hover {
     background: var(--violet-hover);
 }
+
+/* Independent, non-destructive Google connection test */
+.google-connect {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.google-connect-button {
+    margin-top: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.google-connect-button:disabled { opacity: .6; cursor: wait; }
+.google-connect-status {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
