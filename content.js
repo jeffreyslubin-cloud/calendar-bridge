@@ -76,6 +76,7 @@ class CalendarLiberator {
             await this.navigateToToday();
             
             this.allEvents = [];
+            this.incompleteDiagnostics = [];
             
             // Calculate exact date range: 7 days back from today + today + 21 days forward = 28 days total
             const today = new Date();
@@ -140,6 +141,11 @@ class CalendarLiberator {
             
             this.sendProgress('Generating ICS file...', 85);
             const icsContent = this.generateICS();
+            const exportedCount = this.lastExportCounts?.exported || 0;
+            const skippedCount = this.lastExportCounts?.skipped || 0;
+            if (exportedCount === 0) {
+                throw new Error('No valid events with dates and times were available to export.');
+            }
             
             this.sendProgress(this.destination === 'publish' ? 'Publishing file...' : 'Downloading file...', 90);
             const delivery = await this.deliverICS(icsContent);
@@ -157,8 +163,10 @@ class CalendarLiberator {
             
             return { 
                 success: true, 
-                eventCount: this.allEvents.length,
-                message: `Successfully exported ${this.allEvents.length} events!`,
+                eventCount: exportedCount,
+                skippedCount,
+                incompleteDiagnostics: this.incompleteDiagnostics || [],
+                message: `Exported ${exportedCount} valid events; skipped ${skippedCount} incomplete events.`,
                 ...delivery
             };
             
@@ -675,7 +683,29 @@ class CalendarLiberator {
         const calNode = eventElement.closest('[data-calitemid]') || eventElement;
         const calItemId = calNode?.getAttribute?.('data-calitemid') || calNode?.dataset?.calitemid;
         if (calItemId) eventData.calItemId = calItemId;
-        
+
+        // Diagnostic details are returned only to the local popup, without
+        // persistence or network transmission. The user chooses what to share.
+        if (!eventData.date || (!eventData.allDay && (!eventData.startTime || !eventData.endTime))) {
+            const diagnostic = {
+                eventTitle: eventData.title,
+                parsedDate: eventData.date,
+                parsedStart: eventData.startTime,
+                parsedEnd: eventData.endTime,
+                ariaLabel: ariaLabel,
+                ariaDescription: buttonElement.getAttribute('aria-description') || '',
+                titleAttribute: title,
+                visibleText: (buttonElement.innerText || buttonElement.textContent || '').trim().slice(0, 500),
+                elementAttributes: Array.from(eventElement.attributes || []).map(attribute => attribute.name),
+                buttonAttributes: Array.from(buttonElement.attributes || []).map(attribute => attribute.name)
+            };
+            const key = (calItemId || '') + '|' + diagnostic.eventTitle + '|' + diagnostic.ariaLabel;
+            if (!this.incompleteDiagnostics) this.incompleteDiagnostics = [];
+            if (!this.incompleteDiagnostics.some(item => item.key === key)) {
+                this.incompleteDiagnostics.push({ key, ...diagnostic });
+            }
+        }
+
         return eventData;
     }
 
@@ -708,6 +738,19 @@ class CalendarLiberator {
             allDay: false
         };
         
+        // New Outlook accessible labels can include a weekday and full date
+        // for EACH boundary, e.g. "4:00 PM Friday, December 11, 2026 to
+        // 12:00 AM Saturday, December 12, 2026". The legacy regex below only
+        // understands adjacent times, so parse this explicit range first.
+        const dateTimeRangePattern = /(\d{1,2}:\d{2}\s*(?:AM|PM))\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s+to\s+(\d{1,2}:\d{2}\s*(?:AM|PM))\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i;
+        const explicitRange = ariaLabel.match(dateTimeRangePattern);
+        if (explicitRange) {
+            eventData.startTime = explicitRange[1].trim();
+            eventData.date = explicitRange[2].trim();
+            eventData.endTime = explicitRange[3].trim();
+            eventData.endDate = explicitRange[4].trim();
+        }
+
         // Parse time ranges. Support both 12-hour (AM/PM) and 24-hour formats
         const timePatterns = [
             /(\d{1,2}:\d{2}\s*(?:AM|PM))\s*to\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i,
@@ -725,7 +768,7 @@ class CalendarLiberator {
             }
         }
 
-        if (!matched) {
+        if (!matched && !explicitRange) {
             if (ariaLabel.toLowerCase().includes('all day')) {
                 eventData.allDay = true;
             }
@@ -734,7 +777,7 @@ class CalendarLiberator {
         // Parse date (e.g., "Monday, October 6, 2025" or date ranges)
         const datePattern = /(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i;
         const dateMatch = ariaLabel.match(datePattern);
-        if (dateMatch) {
+        if (dateMatch && !eventData.date) {
             eventData.date = dateMatch[1].trim();
         }
         
@@ -802,7 +845,12 @@ class CalendarLiberator {
         // fall back to the display name ("John Doe - Outlook") if no email was found
         const accountIdentity = this.userEmail || this.userDisplayName || null;
         const icsGenerator = new ICSGenerator(this.timezone, accountIdentity, this.calendarName || null);
-        return icsGenerator.generate(this.allEvents);
+        const ics = icsGenerator.generate(this.allEvents);
+        this.lastExportCounts = {
+            exported: icsGenerator.lastExportedCount,
+            skipped: icsGenerator.lastSkippedCount
+        };
+        return ics;
     }
 
     async detectUserEmail() {

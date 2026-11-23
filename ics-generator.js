@@ -32,8 +32,19 @@ class ICSGenerator {
             `X-WR-TIMEZONE:${this.getIANATimezone()}`
         ];
 
+        // Never emit invalid VEVENT records without a valid DTSTART/DTEND.
+        // Incomplete source events remain visible in the console for diagnosis.
+        this.lastSkippedCount = 0;
+        this.lastExportedCount = 0;
         for (const event of events) {
-            lines.push(...this.generateEventLines(event));
+            const eventLines = this.generateEventLines(event);
+            if (eventLines) {
+                lines.push(...eventLines);
+                this.lastExportedCount++;
+            } else {
+                this.lastSkippedCount++;
+                console.warn('[CalendarBridge] Skipped undated or invalid event:', event.title || '(untitled)');
+            }
         }
 
         lines.push('END:VCALENDAR');
@@ -65,6 +76,7 @@ class ICSGenerator {
                     endDate = this.parseEndDateFromLocation(event.location) || dateOnly;
                 }
                 
+                if (!endDate || endDate < dateOnly) return null;
                 lines.push(`DTSTART;VALUE=DATE:${this.formatDateOnly(dateOnly)}`);
                 
                 // For multi-day events, end date should be the day AFTER the last day
@@ -79,9 +91,23 @@ class ICSGenerator {
             
             if (day && start && end) {
                 const startUTC = this.wallTimeToUTC(day, start.hours, start.minutes);
-                const endUTC = this.wallTimeToUTC(day, end.hours, end.minutes);
+                // Prefer Outlook's explicit end date for cross-midnight and
+                // 24-hour events. Only infer the next day for legacy labels
+                // that supply one date and a clock-time range.
+                const endDay = event.endDate ? this.parseDate(event.endDate) : new Date(day);
+                if (!endDay) return null;
+                const startMinutes = start.hours * 60 + start.minutes;
+                const endMinutes = end.hours * 60 + end.minutes;
+                if (!event.endDate) {
+                    if (endMinutes === startMinutes) return null; // ambiguous
+                    if (endMinutes < startMinutes) endDay.setDate(endDay.getDate() + 1);
+                }
+                const endUTC = this.wallTimeToUTC(endDay, end.hours, end.minutes);
+                if (!Number.isFinite(startUTC.getTime()) || !Number.isFinite(endUTC.getTime()) || endUTC <= startUTC) return null;
                 lines.push(`DTSTART:${this.formatDateTimeUTC(startUTC)}`);
                 lines.push(`DTEND:${this.formatDateTimeUTC(endUTC)}`);
+            } else {
+                return null;
             }
         }
         
@@ -197,7 +223,7 @@ class ICSGenerator {
                 }
             }
 
-            if (hours === null) return null;
+            if (hours === null || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
             return { hours, minutes };
         } catch (error) {
             console.warn('Error parsing time:', timeString, error);

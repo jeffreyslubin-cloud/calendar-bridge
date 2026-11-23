@@ -10,6 +10,8 @@ class CalendarLiberatorPopup {
         this.teamsState = document.getElementById('teamsState');
         this.outlookCalendarLink = document.getElementById('outlookCalendarLink');
         this.runButton = document.getElementById('runButton');
+        this.downloadDiagnosticsButton = document.getElementById('downloadDiagnostics');
+        this.incompleteDiagnostics = [];
         this.calendarNameInput = document.getElementById('calendarName');
         this.timezoneSelect = document.getElementById('timezone');
         this.includeDeclinedCheckbox = document.getElementById('includeDeclined');
@@ -28,6 +30,7 @@ class CalendarLiberatorPopup {
 
     init() {
         this.runButton.addEventListener('click', () => this.startExport());
+        this.downloadDiagnosticsButton.addEventListener('click', () => this.downloadIncompleteDiagnostics());
 
         this.outlookCalendarLink.addEventListener('click', (event) => {
             event.preventDefault();
@@ -201,20 +204,46 @@ class CalendarLiberatorPopup {
     }
 
     reportDelivery(response) {
+        this.incompleteDiagnostics = Array.isArray(response.incompleteDiagnostics) ? response.incompleteDiagnostics : [];
+        this.downloadDiagnosticsButton.hidden = this.incompleteDiagnostics.length === 0;
         const count = response.eventCount;
         const label = count === 1 ? '1 event' : `${count} events`;
 
         if (response.delivery === 'published') {
             const host = this.destinationHost();
             this.showStatus(`Published ${label}${host ? ` to ${host}` : ''}.`);
+            if (response.skippedCount > 0) {
+                this.showError(`Warning: ${response.skippedCount} appointment(s) with missing or invalid dates/times were omitted. This calendar is incomplete.`);
+            }
             return;
         }
 
         this.showStatus(`Downloaded ${label}.`);
+        if (response.skippedCount > 0) {
+            this.showError(`Warning: ${response.skippedCount} appointment(s) had missing or invalid dates/times and were NOT included. Do not treat this export as a complete calendar backup or sync.`);
+        }
 
         if (response.publishError) {
             this.showError(`Publish failed — ${response.publishError}`);
         }
+    }
+
+    downloadIncompleteDiagnostics() {
+        if (!this.incompleteDiagnostics.length) return;
+        const report = JSON.stringify({
+            purpose: 'Local-only diagnostic report for Outlook appointment extraction',
+            note: 'Review before sharing: titles and accessibility attributes can contain private details.',
+            items: this.incompleteDiagnostics
+        }, null, 2);
+        const blob = new Blob([report], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'calendar-bridge-missing-events.json';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     // Append the current UTC offset to each option label, e.g.
@@ -340,6 +369,8 @@ class CalendarLiberatorPopup {
     }
 
     clearResult() {
+        this.incompleteDiagnostics = [];
+        this.downloadDiagnosticsButton.hidden = true;
         this.statusText.hidden = true;
         this.errorText.hidden = true;
     }
