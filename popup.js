@@ -14,6 +14,7 @@ class CalendarLiberatorPopup {
         this.incompleteDiagnostics = [];
         this.calendarNameInput = document.getElementById('calendarName');
         this.timezoneSelect = document.getElementById('timezone');
+        this.exportDaysSelect = document.getElementById('exportDays');
         this.includeDeclinedCheckbox = document.getElementById('includeDeclined');
         this.includeOOOCheckbox = document.getElementById('includeOOO');
         this.errorText = document.getElementById('errorText');
@@ -49,6 +50,7 @@ class CalendarLiberatorPopup {
         const clear = () => this.clearResult();
         this.calendarNameInput.addEventListener('input', clear);
         this.timezoneSelect.addEventListener('change', clear);
+        this.exportDaysSelect.addEventListener('change', clear);
         this.includeDeclinedCheckbox.addEventListener('change', clear);
         this.includeOOOCheckbox.addEventListener('change', clear);
 
@@ -150,6 +152,7 @@ class CalendarLiberatorPopup {
     async startExport() {
         const destination = this.destination;
         const selectedTimezone = this.timezoneSelect.value;
+        const exportDays = Number(this.exportDaysSelect.value);
         const calendarName = this.calendarNameInput.value.trim();
         const includeDeclined = this.includeDeclinedCheckbox.checked;
         const includeOOO = this.includeOOOCheckbox.checked;
@@ -177,6 +180,7 @@ class CalendarLiberatorPopup {
                 action: 'exportCalendar',
                 destination: destination,
                 timezone: selectedTimezone,
+                exportDays,
                 calendarName: calendarName || null,
                 includeDeclined: includeDeclined,
                 includeOOO: includeOOO
