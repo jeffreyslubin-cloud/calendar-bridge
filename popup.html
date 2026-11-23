@@ -59,6 +59,16 @@
             <input type="text" id="calendarName" placeholder="Auto-detected from Outlook" maxlength="100">
         </div>
         <div class="field">
+            <label for="exportDays">Export range</label>
+            <select id="exportDays">
+                <option value="28">28 days ahead (quick test)</option>
+                <option value="90" selected>90 days ahead</option>
+                <option value="180">180 days ahead</option>
+            </select>
+            <small>Includes the previous 7 days as well. Larger exports may take longer.</small>
+        </div>
+
+        <div class="field">
             <label for="timezone">Timezone</label>
             <!-- Values are real IANA zones: a bare "UTC+1" is ambiguous with
                  respect to DST. Labels get the current offset appended by popup.js. -->
