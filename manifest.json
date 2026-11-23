@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Calendar Liberator",
+  "name": "Calendar Bridge",
   "version": "1.3.2",
   "description": "Export your Outlook Web calendar to .ics for any calendar app, or publish it to your own URL for auto-refresh. Private, no sign-in.",
   "icons": {
@@ -51,7 +51,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Calendar Liberator - Export Outlook Calendar",
+    "default_title": "Calendar Bridge - Export Outlook Calendar",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",
@@ -61,7 +61,7 @@
     }
   },
   "author": "Fabio Biocchetti",
-  "homepage_url": "https://github.com/fabiocchetti/calendar-liberator",
+  "homepage_url": "https://github.com/jeffreyslubin-cloud/calendar-bridge",
   "optional_host_permissions": [
     "*://*/*"
   ]
