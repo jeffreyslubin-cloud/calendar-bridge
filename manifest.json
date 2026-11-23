@@ -64,5 +64,6 @@
   "homepage_url": "https://github.com/jeffreyslubin-cloud/calendar-bridge",
   "optional_host_permissions": [
     "*://*/*"
-  ]
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr72R4Ji6aaRAVgBKc9nYBhgfGClGzMc5mhKTI5KAqFeouH/PIDW0DeHXMT9nm0fpFU8ScZhOP1KpqGYg+HvDLr6GyaH772UOTAr7FHoX2L3tGPflmuYv+u1LZPbmw3aWn5fyYWI7dfbsNMbeDNIXPI5rL1Fp2jJeHdGTSmSXjGQ2K4OeZhJi0flEMeQSHkAV1/8+uGOItwTBmKd2VQERehnOpa+6AQoQ6sisgcE3xoiiURa09YJcicc6SYHI1qVGYJpjaSTCm3lIRCo39acEByJPNiyGSNUQgSC3lUvx2bw89sp4f4ws+sLxdy72Rpj9lxWmHqC50gIAkl20OY874wIDAQAB"
 }
