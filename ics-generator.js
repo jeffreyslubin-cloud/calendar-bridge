@@ -24,11 +24,11 @@ class ICSGenerator {
         const lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//Calendar Liberator//Calendar Liberator 1.1//EN',
+            'PRODID:-//Calendar Bridge//Calendar Bridge 1.0//EN',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             `X-WR-CALNAME:${this.escapeText(calendarName)}`,
-            `X-WR-CALDESC:Exported from Outlook Web Calendar using Calendar Liberator`,
+            `X-WR-CALDESC:Exported from Outlook Web Calendar using Calendar Bridge`,
             `X-WR-TIMEZONE:${this.getIANATimezone()}`
         ];
 
