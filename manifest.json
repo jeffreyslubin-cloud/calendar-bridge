@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Calendar Bridge",
   "version": "1.3.2",
-  "description": "Export your Outlook Web calendar to .ics for any calendar app, or publish it to your own URL for auto-refresh. Private, no sign-in.",
+  "description": "Export Outlook Web calendar appointments as ICS. Optional Google Calendar connection (read-only test during setup).",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -11,7 +11,8 @@
   },
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "identity"
   ],
   "host_permissions": [
     "*://*.outlook.office.com/*",
@@ -23,7 +24,8 @@
     "*://*.outlook.office.com.mcas.ms/*",
     "*://*.outlook.cloud.microsoft.mcas.ms/*",
     "*://*.outlook-sdf.office.com/*",
-    "*://*.outlook-sdf.office365.com/*"
+    "*://*.outlook-sdf.office365.com/*",
+    "https://www.googleapis.com/*"
   ],
   "content_scripts": [
     {
@@ -65,5 +67,11 @@
   "optional_host_permissions": [
     "*://*/*"
   ],
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr72R4Ji6aaRAVgBKc9nYBhgfGClGzMc5mhKTI5KAqFeouH/PIDW0DeHXMT9nm0fpFU8ScZhOP1KpqGYg+HvDLr6GyaH772UOTAr7FHoX2L3tGPflmuYv+u1LZPbmw3aWn5fyYWI7dfbsNMbeDNIXPI5rL1Fp2jJeHdGTSmSXjGQ2K4OeZhJi0flEMeQSHkAV1/8+uGOItwTBmKd2VQERehnOpa+6AQoQ6sisgcE3xoiiURa09YJcicc6SYHI1qVGYJpjaSTCm3lIRCo39acEByJPNiyGSNUQgSC3lUvx2bw89sp4f4ws+sLxdy72Rpj9lxWmHqC50gIAkl20OY874wIDAQAB"
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr72R4Ji6aaRAVgBKc9nYBhgfGClGzMc5mhKTI5KAqFeouH/PIDW0DeHXMT9nm0fpFU8ScZhOP1KpqGYg+HvDLr6GyaH772UOTAr7FHoX2L3tGPflmuYv+u1LZPbmw3aWn5fyYWI7dfbsNMbeDNIXPI5rL1Fp2jJeHdGTSmSXjGQ2K4OeZhJi0flEMeQSHkAV1/8+uGOItwTBmKd2VQERehnOpa+6AQoQ6sisgcE3xoiiURa09YJcicc6SYHI1qVGYJpjaSTCm3lIRCo39acEByJPNiyGSNUQgSC3lUvx2bw89sp4f4ws+sLxdy72Rpj9lxWmHqC50gIAkl20OY874wIDAQAB",
+  "oauth2": {
+    "client_id": "310426066702-57gh8b1ml4si090ejul6ohf6coii909l.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.events"
+    ]
+  }
 }
