@@ -8,7 +8,8 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - `drive-history.js`: original one-file appDataFolder reader and create-once bootstrap; used by the read-only connection check.\n- `history-journal.js` and `drive-journal.js`: **unwired** immutable snapshot history prototype. A complete chain allows recovery and multiple competing branches fail closed; it does not yet provide atomic multi-device locking or a completed writer.
 - `test/sync-planner.test.js` and `test/drive-history.test.js`: logic and mocked-API tests.
 - `sync-history-sandbox.js` and `test/sync-history-sandbox.test.js`: **not loaded into Chrome**. Simulates loading a Drive history, adopting a uniquely matched pre-existing Google event, verifying a deletion, persisting each history version, and recovering the exclusion. The test uses only a mocked Drive API and performs **no Google Calendar writes**. The sandbox intentionally cannot initialize missing history or write to the primary calendar.
-- GitHub Actions runs Node tests on changes to this branch.
+- `sync-create-safety.js` prepares deterministic Google event IDs from the account, calendar, and Outlook UID. When that ID is already present, the module returns `reconcile-existing` instead of proposing another creation. It makes **no API calls** and provides no live writer; checking a list alone is NOT sufficient for a real retry and a future writer must perform an event GET by ID.
+- GitHub Actions is configured to run all `test/*.test.js` on branch pushes. A successful Actions run has **not yet been independently confirmed** by the GitHub connection.
 
 ## Required invariants before enabling real sync
 
