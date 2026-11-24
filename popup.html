@@ -82,6 +82,10 @@
             <input type="text" id="googleCalendarId" value="primary" placeholder="primary or calendar ID" spellcheck="false">
             <small>“primary” checks your main Google calendar. For a separate Work Schedule calendar, enter its calendar ID from Google Calendar settings. Preview does not change either calendar.</small>
         </div>
+        <div class="field">
+            <button id="googleBackupButton" type="button" class="google-connect-button">Download Google calendar backup</button>
+            <p id="googleBackupStatus" class="google-connect-status" role="status" aria-live="polite">Back up the selected Google calendar before any future synchronization. Read-only.</p>
+        </div>
         <section id="previewResult" class="preview-result" hidden aria-live="polite"></section>
         <div class="field">
             <label for="timezone">Timezone</label>
@@ -168,5 +172,7 @@
     <script src="drive-check.js"></script>
     <script src="storage-diagnostic.js"></script>
     <script src="storage-diagnostic-ui.js"></script>
+    <script src="google-backup.js"></script>
+    <script src="google-backup-ui.js"></script>
 </body>
 </html>
