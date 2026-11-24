@@ -12,6 +12,7 @@ assert(manifest.host_permissions.includes('https://www.googleapis.com/*'));
 assert.strictEqual(manifest.oauth2.client_id, '310426066702-57gh8b1ml4si090ejul6ohf6coii909l.apps.googleusercontent.com');
 assert.deepStrictEqual(manifest.oauth2.scopes, [
     'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
     'https://www.googleapis.com/auth/drive.appdata'
 ]);
 assert(popup.includes('id="googleConnectButton"'));
