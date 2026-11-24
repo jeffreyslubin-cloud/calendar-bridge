@@ -3,9 +3,9 @@
 // Never clears an existing calendar or reconstructs historical deletions.
 (function(root){
 'use strict';
-function makeInitializer({store,journal,backupTool,backupVerifier,accountId,calendarId}) {
+function makeInitializer({store,journal,backupTool,backupVerifier,accountId,calendarId,deviceId}) {
     if(!store||!journal||!backupTool||!backupVerifier||!accountId||
-        !calendarId||calendarId==='primary')throw Error('Invalid initial migration destination');
+        !calendarId||calendarId==='primary'||!deviceId)throw Error('Invalid initial migration destination');
     async function initialize({backup,approved,liveCalendar,liveEvents}) {
         if(approved!==true||!liveCalendar||liveCalendar.id!==calendarId||
             !['owner','writer'].includes(liveCalendar.accessRole)||
@@ -21,7 +21,7 @@ function makeInitializer({store,journal,backupTool,backupVerifier,accountId,cale
         const state=await store.read(accountId,calendarId);
         if(state?.state!=='uninitialized'||state.head!==null)
             throw Error('Existing synchronization history must never be replaced');
-        const history={version:1,accountId,calendarId,entries:{}};
+        const history={version:1,accountId,calendarId,writerDeviceId:deviceId,entries:{}};
         journal.validHistory(history);
         const receipt=await store.append(null,history,accountId,calendarId);
         const confirmed=await store.read(accountId,calendarId);
@@ -29,6 +29,7 @@ function makeInitializer({store,journal,backupTool,backupVerifier,accountId,cale
             confirmed.head?.fileId!==receipt.fileId||
             confirmed.history?.accountId!==accountId||
             confirmed.history?.calendarId!==calendarId||
+            confirmed.history?.writerDeviceId!==deviceId||
             Object.keys(confirmed.history.entries||{}).length!==0)
             throw Error('First-run history verification failed');
         return {state:'initialized-empty-destination',historyFileId:receipt.fileId,
