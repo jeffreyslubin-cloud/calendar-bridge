@@ -89,6 +89,10 @@
             <input id="googleBackupFile" type="file" accept=".json,application/json">
             <p id="googleBackupVerifyStatus" class="google-connect-status" role="status" aria-live="polite">File check is local-only; it cannot authorize syncing.</p>
         </div>
+        <div class="field">
+            <button id="syncReadinessButton" type="button" class="google-connect-button">Check sync readiness (no changes)</button>
+            <p id="syncReadinessStatus" class="google-connect-status" role="status" aria-live="polite">Checks Outlook, Google calendar and sync history. Writes remain disabled.</p>
+        </div>
         <section id="previewResult" class="preview-result" hidden aria-live="polite"></section>
         <div class="field">
             <label for="timezone">Timezone</label>
@@ -179,5 +183,10 @@
     <script src="google-backup-ui.js"></script>
     <script src="sync-backup-verify.js"></script>
     <script src="sync-backup-verify-ui.js"></script>
+    <script src="history-journal.js"></script>
+    <script src="drive-journal.js"></script>
+    <script src="sync-planner.js"></script>
+    <script src="sync-readiness.js"></script>
+    <script src="sync-readiness-ui.js"></script>
 </body>
 </html>
