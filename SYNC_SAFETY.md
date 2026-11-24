@@ -5,7 +5,7 @@ Status: **prototype only; no calendar-writing path is enabled.**
 ## What exists now
 
 - `sync-planner.js`: pure planner with versioned, per-calendar history, one-to-one identity matching, conservative one-time adoption, duplicate/ambiguous matching detection, manual Google edit preservation, and exclusion tombstones.
-- `drive-history.js`: isolated appDataFolder reader and one-time history creation. **Not loaded by the extension and not authorized yet.**
+- `drive-history.js`: original one-file appDataFolder reader and create-once bootstrap; used by the read-only connection check.\n- `history-journal.js` and `drive-journal.js`: **unwired** immutable snapshot history prototype. A complete chain allows recovery and multiple competing branches fail closed; it does not yet provide atomic multi-device locking or a completed writer.
 - `test/sync-planner.test.js` and `test/drive-history.test.js`: logic and mocked-API tests.
 - GitHub Actions runs Node tests on changes to this branch.
 
@@ -35,4 +35,4 @@ Enable **Google Drive API** in the existing Cloud project, and authorize
 
 ## Explicitly not implemented yet
 
-No Google Calendar POST/PATCH/DELETE calls, no live persistent history updates, no UI to select a safe destination, no first-import execution, no rollback, no unattended sync. The existing preview and ICS export remain unchanged.
+No Google Calendar POST/PATCH/DELETE calls, no live persistent history updates, no UI to select a safe destination, no first-import execution, no automated rollback, no unattended sync. The new Drive journal's POST operation exists in an isolated development module but is not loaded into the extension; it has not been executed against a real account. This is NOT an atomic concurrent-write solution, so live sync remains disabled. The existing preview and ICS export remain unchanged.
