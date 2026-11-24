@@ -1,0 +1,32 @@
+name: Calendar Bridge tests
+
+on:
+  push:
+    branches:
+      - feature-google-preview-sync
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run all dependency-free Node tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          for test in test/*.test.js; do
+            echo "::group::$test"
+            node "$test"
+            echo "::endgroup::"
+            count=$((count+1))
+          done
+          if [ "$count" -eq 0 ]; then echo "No tests found"; exit 1; fi
