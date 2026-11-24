@@ -8,6 +8,7 @@ const Safety=require('../sync-create-safety.js');
 const Recovery=require('../sync-create-recovery.js');
 const Intent=require('../sync-create-intent.js');
 const Transaction=require('../sync-transaction-sandbox.js');
+const WriteGate=require('../sync-write-gate.js');
 const source={uid:'outlook-shift-1',summary:'ER shift',location:'Hershey',
     start:'2026-12-12T21:00:00.000Z',end:'2026-12-13T05:00:00.000Z'};
 const empty=()=>({version:1,accountId:'acct',calendarId:'work',entries:{}});
@@ -47,9 +48,16 @@ function harness(mode) {
         google=event;
         return {state:'insert-reported-success',id:event.id};
     }};
-    const transaction=()=>Transaction.makeTransaction({store,planner:Planner,journal:Journal,
+    const authorization={schema:1,userApproved:true,accountId:'acct',calendarId:'work',
+        calendarName:'Test Work Calendar',
+        destination:{id:'work',summary:'Test Work Calendar',accessRole:'owner'},
+        backup:{verified:true,accountId:'acct',calendarId:'work',
+            backupId:'mock-backup',checksum:'a'.repeat(64),eventCount:0},
+        scan:{completeOutlook:true,completeGoogle:true,outlookCount:1,googleCount:0}};
+    const transaction=(override=authorization)=>Transaction.makeTransaction({store,planner:Planner,journal:Journal,
         safety:Safety,recovery:Recovery,intent:Intent,reader,writer,accountId:'acct',
-        calendarId:'work',subtle:webcrypto.subtle});
+        calendarId:'work',subtle:webcrypto.subtle,writeGate:WriteGate,
+        authorization:override});
     return {transaction,store,reader,writer,setGoogle:g=>google=g,
         setMode:m=>postMode=m,get state(){return {history,headId,posts,reads,revision}}};
 }
@@ -93,7 +101,7 @@ const scan={completeOutlook:true,completeGoogle:true};
 
     const invalid=harness();
     await assert.rejects(invalid.transaction().create(source,[source,{...source}],[],scan),
-        /ambiguous/);
+        /ambiguous|approved receipt/);
     await assert.rejects(invalid.transaction().create(source,[source],[],
         {...scan,completeOutlook:false}),/Incomplete/);
     assert.strictEqual(invalid.state.revision,0);
@@ -113,6 +121,20 @@ const scan={completeOutlook:true,completeGoogle:true};
     assert.strictEqual(resumed.state.posts,1);
     assert.strictEqual(resumed.state.history.entries[source.uid].state,'active');
     console.log('✓ crash recovery maps verified existing event with no second POST');
+
+    const noBackup=harness();
+    const unauthorized=noBackup.transaction({
+        schema:1,userApproved:true,accountId:'acct',calendarId:'work',
+        calendarName:'Test Work Calendar',
+        destination:{id:'work',summary:'Test Work Calendar',accessRole:'owner'},
+        backup:{verified:false,accountId:'acct',calendarId:'work',
+            backupId:'mock',checksum:'a'.repeat(64),eventCount:0},
+        scan:{completeOutlook:true,completeGoogle:true,outlookCount:1,googleCount:0}
+    });
+    await assert.rejects(unauthorized.create(source,[source],[],scan),/backup/);
+    assert.strictEqual(noBackup.state.revision,0);
+    assert.strictEqual(noBackup.state.posts,0);
+    console.log('✓ unverified backup prevents both history mutation and Google POST');
 
     assert.strictEqual(typeof resumed.transaction().delete,'undefined');
     assert.strictEqual(typeof resumed.transaction().update,'undefined');
