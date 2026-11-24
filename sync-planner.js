@@ -33,7 +33,9 @@ function validateHistory(history, calendarId) {
         throw Error('Missing, corrupt, or wrong-calendar sync history; refusing to plan writes');
     }
     for (const [uid, entry] of Object.entries(history.entries)) {
-        if (!uid || !entry || !['active', 'excluded'].includes(entry.state) ||
+        if (!uid || !entry || !['active', 'excluded', 'pending'].includes(entry.state) ||
+            (entry.state === 'pending' && (!entry.googleId || !entry.requested ||
+                !entry.requested.start || !entry.requested.end || !entry.requested.summary)) ||
             (entry.state === 'active' && (!entry.googleId || !entry.lastSynced))) {
             throw Error('Invalid history entry; refusing to plan writes');
         }
@@ -74,6 +76,11 @@ function plan(outlook, googleEvents, history, opts) {
             continue;
         }
         const prior = history.entries[e.uid];
+        if (prior && prior.state === 'pending') {
+            actions.verifyMissing.push({ uid: e.uid, googleId: prior.googleId,
+                reason: 'Pending creation must be reconciled by ID before any retry' });
+            continue;
+        }
         if (prior && prior.state === 'excluded') {
             actions.excluded.push({ uid: e.uid });
             continue;
