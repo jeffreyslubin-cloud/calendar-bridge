@@ -72,6 +72,7 @@
     "client_id": "310426066702-57gh8b1ml4si090ejul6ohf6coii909l.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
       "https://www.googleapis.com/auth/drive.appdata"
     ]
   }
