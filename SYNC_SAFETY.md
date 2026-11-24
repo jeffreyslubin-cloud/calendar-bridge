@@ -37,6 +37,13 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - Google OAuth now also requests `calendar.calendarlist.readonly`, needed for calendar summary, timezone and accessRole metadata. This will require an updated Google consent authorization when installed. Only `calendar.events` and `drive.appdata` were in the previously tested Chrome version.
 - Tests for these modules run in the GitHub Actions suite. **The newly added backup and verification code has not yet been exercised against a live user calendar.**
 
+## Integrated read-only preflight
+
+- `sync-readiness.js` combines complete Outlook extraction, Google Calendar content/role verification, and versioned Drive history into a single read-only assessment. The popup now has **Check sync readiness (no changes)**, which uses `sync-readiness-ui.js`. It does not initialize history or approve Calendar writes; it reports concrete blockers. A dedicated calendar with no history requires deliberate first-run migration.
+- `test/sync-readiness.test.js` checks incomplete Outlook scans, calendar/account mismatches, nonempty first-run calendars, and saved-history matching.
+- `test/release-safety.test.js` asserts that no unfinished writer, transaction runner, or first-run initializer is reachable from the popup, background worker, or Outlook content script.
+- GitHub Actions is **confirmed working**: the branch test suite passed on commit `c847dec1cd29a2c0f5b9c1b0798b1bfaa4f10c75` ([run](https://github.com/jeffreyslubin-cloud/calendar-bridge/actions/runs/45504566584)). New commits must be checked independently before reporting success.
+
 ## Required invariants before enabling real sync
 
 1. Never write to `primary` by default. Require explicit selection of the dedicated destination calendar, display its name and ID, and confirm once.
