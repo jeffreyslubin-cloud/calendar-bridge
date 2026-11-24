@@ -44,6 +44,14 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - `test/release-safety.test.js` asserts that no unfinished writer, transaction runner, or first-run initializer is reachable from the popup, background worker, or Outlook content script.
 - GitHub Actions is **confirmed working**: the branch test suite passed on commit `c847dec1cd29a2c0f5b9c1b0798b1bfaa4f10c75` ([run](https://github.com/jeffreyslubin-cloud/calendar-bridge/actions/runs/45504566584)). New commits must be checked independently before reporting success.
 
+## Single-writer safeguards (isolated prototype)
+
+- `sync-first-run.js` now binds a new history to a `writerDeviceId`, separate from the Google account and calendar identity. The transaction sandbox refuses writes from a different browser installation.
+- `sync-browser-lock.js` uses the browser Web Locks API to serialize overlapping runs in the same installation; if Web Locks are unavailable, it refuses to run.
+- `sync-device-id.js` creates the installation ID once, keeps it in `chrome.storage.local` rather than synced storage, and detects corrupt/lost identity. Reinstalling the extension or clearing local storage could require explicit recovery; it must never silently take over a different writer's history.
+- This protects a **single authorized browser installation**, not unrestricted multi-device synchronization. Do not enable live writes on multiple installations; a future controlled owner-transfer workflow would be necessary.
+- The identity and lock modules are **not wired into the live popup**. This entire section remains a test-only foundation for future controlled writes.
+
 ## Required invariants before enabling real sync
 
 1. Never write to `primary` by default. Require explicit selection of the dedicated destination calendar, display its name and ID, and confirm once.
