@@ -34,12 +34,12 @@ const source={uid:'outlook-a',summary:'ER shift',location:'Hershey',
         {...existing,extendedProperties:{private:{calendarBridge:'v1',calendarBridgeUid:'other'}}},
         {...existing,extendedProperties:undefined},
         {...existing,recurringEventId:'parent-id'},
-        {...existing,status:'cancelled'},
-        {...existing,id:'different-id'}
+        {...existing,status:'cancelled'}
     ]) {
         const found=Recovery.inspectRecoveredEvent(id,source,changed);
         assert.strictEqual(found.state,'blocked');
     }
+    assert.throws(()=>Recovery.inspectRecoveredEvent(id,source,{...existing,id:'different-id'}),/Unexpected/);
     console.log('✓ edits, missing ownership marker, cancellations and recurrence all blocked');
 
     status=404;
