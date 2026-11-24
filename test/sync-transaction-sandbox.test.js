@@ -104,6 +104,8 @@ const scan={completeOutlook:true,completeGoogle:true};
         /ambiguous|approved receipt/);
     await assert.rejects(invalid.transaction().create(source,[source],[],
         {...scan,completeOutlook:false}),/Incomplete/);
+    await assert.rejects(invalid.transaction().create(
+        {...source,summary:'Fabricated shift'},[source],[],scan),/differs/);
     assert.strictEqual(invalid.state.revision,0);
     assert.strictEqual(invalid.state.posts,0);
     console.log('✓ duplicate Outlook IDs and incomplete scans block even pending intent');
