@@ -52,6 +52,11 @@ function makeTransaction({store,planner,journal,safety,recovery,intent,reader,wr
                 !Array.isArray(googleEvents)||!Array.isArray(outlookEvents)||
                 outlookEvents.filter(e=>e.uid===source?.uid).length!==1)
                 throw Error('Incomplete or ambiguous calendar scans');
+            const scanned=outlookEvents.find(e=>e.uid===source.uid);
+            if(['summary','location','start','end'].some(field=>
+                String(scanned?.[field]||'')!==String(source[field]||''))) {
+                throw Error('Selected event differs from verified Outlook scan');
+            }
             // Authorization is checked before touching history. This sandbox
             // does not mint receipts or fetch backup data by itself.
             writeGate.assertAuthorized(authorization,accountId,calendarId);
@@ -64,7 +69,8 @@ function makeTransaction({store,planner,journal,safety,recovery,intent,reader,wr
             });
             if(plan.actions.add.filter(e=>e.uid===source.uid).length!==1||
                 plan.actions.ambiguous.length||plan.actions.conflict.length||
-                plan.actions.verifyMissing.length)
+                plan.actions.verifyMissing.length||plan.actions.adopt.length||
+                plan.actions.updateCandidate.length)
                 throw Error('Planner refused appointment creation');
             const proposed=await safety.prepareAdd(source,loaded.history,{
                 accountId,calendarId,completeOutlook:true,completeGoogle:true,
