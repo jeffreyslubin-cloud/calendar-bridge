@@ -14,6 +14,14 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - `sync-create-safety.js` prepares deterministic Google event IDs from the account, calendar, and Outlook UID. When that ID is already present, the module returns `reconcile-existing` instead of proposing another creation. It makes **no API calls** and provides no live writer; checking a list alone is NOT sufficient for a real retry and a future writer must perform an event GET by ID.
 - GitHub Actions is configured to run all `test/*.test.js` on branch pushes. A successful Actions run has **not yet been independently confirmed** by the GitHub connection.
 
+## Pending-create transaction prototype (not enabled)
+
+- `sync-create-intent.js` adds a third history state, `pending`. The intent and deterministic event ID must be durably saved **before** an event is created; the planner must never consider it a new addition while pending.
+- `sync-insert-isolated.js` contains a single-attempt Google Calendar `events.insert` adapter. It is **NOT referenced by any popup, background script or manifest**, and only mocked API tests call it. A timeout, HTTP 409, or failed response is uncertain, never permission to retry automatically.
+- `sync-transaction-sandbox.js` simulates the sequence: planner approval → append pending history → GET-by-ID → one insert attempt if unconfirmed → GET-by-ID → verified history completion. On restart it **only GETs** a pending event and never sends a second insert. A cancelled or user-edited event remains pending for review.
+- The Google Calendar API warns that custom event IDs may not always detect collisions at insert time. Deterministic IDs plus GET-based reconciliation and durable intent reduce risk but do not replace a verified single-writer and proper source/account checks.
+- Simulation tests: `test/sync-create-intent.test.js`, `test/sync-insert-isolated.test.js`, `test/sync-transaction-sandbox.test.js`. A successful GitHub Actions run has not been independently confirmed.
+
 ## Required invariants before enabling real sync
 
 1. Never write to `primary` by default. Require explicit selection of the dedicated destination calendar, display its name and ID, and confirm once.
@@ -43,4 +51,4 @@ The popup includes **Test Drive save and read**. It creates a small, uniquely na
 
 ## Explicitly not implemented yet
 
-No Google Calendar POST/PATCH/DELETE calls, no live persistent history updates, no UI to select a safe destination, no first-import execution, no automated rollback, no unattended sync. The new Drive journal's POST operation exists in an isolated development module but is not loaded into the extension; it has not been executed against a real account. This is NOT an atomic concurrent-write solution, so live sync remains disabled. The existing preview and ICS export remain unchanged.
+No **enabled** Google Calendar POST/PATCH/DELETE calls, no live persistent history updates, no UI to select a safe destination, no first-import execution, no automated rollback, no unattended sync. The new Drive journal's POST operation exists in an isolated development module but is not loaded into the extension; it has not been executed against a real account. This is NOT an atomic concurrent-write solution, so live sync remains disabled. The existing preview and ICS export remain unchanged.
