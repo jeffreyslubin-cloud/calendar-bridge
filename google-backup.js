@@ -31,7 +31,8 @@ function makeBackup(fetchFn,token,{subtle=globalThis.crypto?.subtle}={}) {
         // Primary calendar can be exported for safety, but never approved for writes.
         const id=calendarId.trim();
         const path=BASE+encodeURIComponent(id);
-        const metadata=await get(path+'?fields=id,summary,timeZone,accessRole,description');
+        const metadata=await get('https://www.googleapis.com/calendar/v3/users/me/calendarList/'+
+            encodeURIComponent(id)+'?fields=id,summary,timeZone,accessRole,description');
         if(metadata.id!==id && id!=='primary')throw Error('Calendar identity mismatch');
         if(!metadata.id||!metadata.summary)throw Error('Incomplete calendar metadata');
         const events=[];
