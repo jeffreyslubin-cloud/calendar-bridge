@@ -22,6 +22,12 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - The Google Calendar API warns that custom event IDs may not always detect collisions at insert time. Deterministic IDs plus GET-based reconciliation and durable intent reduce risk but do not replace a verified single-writer and proper source/account checks.
 - Simulation tests: `test/sync-create-intent.test.js`, `test/sync-insert-isolated.test.js`, `test/sync-transaction-sandbox.test.js`. A successful GitHub Actions run has not been independently confirmed.
 
+## Verified destination and backup gate (prototype)
+
+- `sync-write-gate.js` requires explicit destination approval, a matching non-primary Google calendar with write access, a verified backup receipt, and a complete source/destination scan receipt. The transaction sandbox refuses to create even a pending record without these inputs and rejects a selected appointment if its fields differ from the full scan.
+- A future real UI must **actually generate and verify** the destination metadata, backup and scan receipts. The mocked receipts in unit tests are not security attestations, and do not authorize production use.
+- Tests: `test/sync-write-gate.test.js` and extended `test/sync-transaction-sandbox.test.js`. Their GitHub Actions outcome has not been independently confirmed.
+
 ## Required invariants before enabling real sync
 
 1. Never write to `primary` by default. Require explicit selection of the dedicated destination calendar, display its name and ID, and confirm once.
