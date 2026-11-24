@@ -33,6 +33,10 @@ Past Google-side deletions cannot be reconstructed reliably from the current Out
 Enable **Google Drive API** in the existing Cloud project, and authorize
 `https://www.googleapis.com/auth/drive.appdata` for the Chrome extension OAuth client. Do not change the current extension's permissions until the integrated flow is ready to test.
 
+## Isolated live Drive diagnostic (opt-in)
+
+The popup includes **Test Drive save and read**. It creates a small, uniquely named **test-only** JSON document in Drive appDataFolder, verifies it by ID and marker, and on repeat clicks reads the existing file. It does **not** initialize or update production sync history. A test file is left in Drive for future validation, and failures stop without attempting automatic overwrite. This is a storage connectivity test, not proof that the eventual production journal is crash-safe or race-safe.
+
 ## Explicitly not implemented yet
 
 No Google Calendar POST/PATCH/DELETE calls, no live persistent history updates, no UI to select a safe destination, no first-import execution, no automated rollback, no unattended sync. The new Drive journal's POST operation exists in an isolated development module but is not loaded into the extension; it has not been executed against a real account. This is NOT an atomic concurrent-write solution, so live sync remains disabled. The existing preview and ICS export remain unchanged.
