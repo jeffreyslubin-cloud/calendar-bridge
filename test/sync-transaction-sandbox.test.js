@@ -11,10 +11,16 @@ const Transaction=require('../sync-transaction-sandbox.js');
 const WriteGate=require('../sync-write-gate.js');
 const source={uid:'outlook-shift-1',summary:'ER shift',location:'Hershey',
     start:'2026-12-12T21:00:00.000Z',end:'2026-12-13T05:00:00.000Z'};
-const empty=()=>({version:1,accountId:'acct',calendarId:'work',entries:{}});
+const empty=()=>({version:1,accountId:'acct',calendarId:'work',writerDeviceId:'device-A',entries:{}});
 function harness(mode) {
     let history=empty(),headId='head-0',revision=0,posts=0,reads=0;
     let google=null,postMode=mode||'normal',writeFailed=false;
+    let locked=false;
+    const runExclusive=async(a,c,fn)=>{
+        assert(!locked,'Concurrent writer unexpectedly acquired lock');
+        locked=true;
+        try{return await fn();}finally{locked=false;}
+    };
     const store={
         async read(){return {state:'loaded',head:{fileId:headId},
             history:JSON.parse(JSON.stringify(history))};},
@@ -57,7 +63,7 @@ function harness(mode) {
     const transaction=(override=authorization)=>Transaction.makeTransaction({store,planner:Planner,journal:Journal,
         safety:Safety,recovery:Recovery,intent:Intent,reader,writer,accountId:'acct',
         calendarId:'work',subtle:webcrypto.subtle,writeGate:WriteGate,
-        authorization:override});
+        authorization:override,deviceId:'device-A',runExclusive});
     return {transaction,store,reader,writer,setGoogle:g=>google=g,
         setMode:m=>postMode=m,get state(){return {history,headId,posts,reads,revision}}};
 }
@@ -137,6 +143,21 @@ const scan={completeOutlook:true,completeGoogle:true};
     assert.strictEqual(noBackup.state.revision,0);
     assert.strictEqual(noBackup.state.posts,0);
     console.log('✓ unverified backup prevents both history mutation and Google POST');
+
+    // A second Chrome installation can read, but must never write history.
+    const foreign=Transaction.makeTransaction({store:resumed.store,planner:Planner,
+        journal:Journal,safety:Safety,recovery:Recovery,intent:Intent,
+        reader:resumed.reader,writer:resumed.writer,accountId:'acct',
+        calendarId:'work',subtle:webcrypto.subtle,writeGate:WriteGate,
+        authorization:{schema:1,userApproved:true,accountId:'acct',
+            calendarId:'work',calendarName:'Test Work Calendar',
+            destination:{id:'work',summary:'Test Work Calendar',accessRole:'owner'},
+            backup:{verified:true,accountId:'acct',calendarId:'work',
+                backupId:'mock',checksum:'a'.repeat(64),eventCount:0},
+            scan:{completeOutlook:true,completeGoogle:true,outlookCount:1,googleCount:0}},
+        deviceId:'device-B',runExclusive:async(a,c,fn)=>fn()});
+    await assert.rejects(foreign.create(source,[source],[],scan),/another browser installation/);
+    console.log('✓ another browser installation cannot execute a transaction');
 
     assert.strictEqual(typeof resumed.transaction().delete,'undefined');
     assert.strictEqual(typeof resumed.transaction().update,'undefined');
