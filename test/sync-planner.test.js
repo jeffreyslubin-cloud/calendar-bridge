@@ -26,11 +26,11 @@ console.log('✓ manual Google title corrections never overwritten silently');
 const missing = S.plan([e], [], adopted, opts);
 assert.strictEqual(missing.counts.verifyMissing, 1);
 assert.strictEqual(missing.counts.add, 0);
-assert.throws(() => S.confirmDeletion(adopted, e.uid, g.id, 403), /not verified/);
-assert.throws(() => S.confirmDeletion(adopted, e.uid, 'wrong-id', 404), /unknown/);
-console.log('✓ missing in search is NOT automatic deletion; server error never tombstones');
+assert.throws(() => S.confirmDeletion(adopted, e.uid, g.id, {firstStatus:404,secondStatus:404,calendarAccessible:false}), /not verified/);
+assert.throws(() => S.confirmDeletion(adopted, e.uid, 'wrong-id', {eventStatus:'cancelled'}), /unknown/);
+console.log('✓ missing in search is NOT automatic deletion; unauthorized 404 never tombstones');
 
-const excluded = S.confirmDeletion(adopted, e.uid, g.id, 404);
+const excluded = S.confirmDeletion(adopted, e.uid, g.id, {firstStatus:404,secondStatus:404,calendarAccessible:true});
 assert.strictEqual(S.plan([e], [], excluded, opts).counts.excluded, 1);
 assert.strictEqual(S.plan([e], [], excluded, opts).counts.add, 0);
 assert.strictEqual(S.plan([e], [g], excluded, opts).counts.excluded, 1);
