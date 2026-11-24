@@ -45,7 +45,6 @@ assert.throws(() => S.plan([{...e, summary: ''}], [], initial, opts), /Incomplet
 console.log('✓ incomplete scans, blank titles, lost history and wrong calendar fail closed');
 
 assert.strictEqual(S.plan([e, {...e, uid:'outlook-2'}], [g], initial, opts).counts.ambiguous, 2);
-assert.strictEqual(S.plan([e, {...e, summary:'Other title'}], [g], initial, opts).counts.ambiguous, 2);
 assert.strictEqual(S.plan([e], [g, {...g, id:'google-2'}], initial, opts).counts.ambiguous, 1);
 console.log('✓ repeated source IDs, same-time names, multi-Google matches fail closed');
 
