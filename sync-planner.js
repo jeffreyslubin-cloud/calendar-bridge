@@ -46,7 +46,7 @@ function plan(outlook, googleEvents, history, opts) {
         throw Error('Both Outlook and Google scans must be complete');
     }
     if (!Array.isArray(outlook) || !Array.isArray(googleEvents)) throw Error('Invalid event input');
-    const byUid = new Map(), bySignature = new Map(), byId = new Map(), counts = new Map();
+    const byUid = new Map(), bySignature = new Map(), byId = new Map(), counts = new Map(), sourceSignatures = new Map();
     const google = googleEvents.filter(g => g.status !== 'cancelled').map(viewGoogle);
     for (const g of google) {
         if (!g.id || !g.start || !g.end) throw Error('Incomplete Google event data');
@@ -63,6 +63,7 @@ function plan(outlook, googleEvents, history, opts) {
     for (const e of outlook) {
         if (!e.uid || !e.start || !e.end || !clean(e.summary)) throw Error('Incomplete Outlook event, including title');
         counts.set(e.uid, (counts.get(e.uid) || 0) + 1);
+        sourceSignatures.set(stamp(e), (sourceSignatures.get(stamp(e)) || 0) + 1);
     }
     const actions = { add: [], adopt: [], verifyMissing: [], excluded: [], unchanged: [],
         updateCandidate: [], conflict: [], ambiguous: [] };
@@ -115,6 +116,11 @@ function plan(outlook, googleEvents, history, opts) {
         // UNIQUE title/time signature. This is a proposal, never a write.
         const uidMatches = byUid.get(e.uid) || [];
         const signatureMatches = bySignature.get(stamp(e)) || [];
+        // Do not adopt by title/time if two Outlook items have that same signature.
+        if (!uidMatches.length && sourceSignatures.get(stamp(e)) > 1) {
+            actions.ambiguous.push({ uid: e.uid, reason: 'Multiple Outlook events share this title and time' });
+            continue;
+        }
         let matches = uidMatches.length ? uidMatches : signatureMatches;
         // Multiple otherwise identical Outlook items cannot map to same Google ID.
         if (matches.length > 1 || (matches.length === 1 && claimed.has(matches[0].id))) {
