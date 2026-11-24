@@ -145,8 +145,15 @@ function confirmDeletion(history, uid, googleId, getOutcome) {
     if (!entry || entry.state !== 'active' || entry.googleId !== googleId) {
         throw Error('Cannot exclude an unknown or differently mapped event');
     }
-    if (getOutcome !== 404 && getOutcome !== 410) {
-        throw Error('Deletion not verified by an authoritative Google event GET');
+    // A lone 404 can also mean revoked calendar access or a wrong account.
+    // Prefer an explicit cancelled resource; otherwise require two independent
+    // 404/410 event checks *and* a successful calendar access probe.
+    const cancelled = getOutcome && getOutcome.eventStatus === 'cancelled';
+    const missingConfirmed = getOutcome && [404, 410].includes(getOutcome.firstStatus) &&
+        [404, 410].includes(getOutcome.secondStatus) &&
+        getOutcome.calendarAccessible === true;
+    if (!cancelled && !missingConfirmed) {
+        throw Error('Deletion not verified; require cancelled event or repeat missing checks with calendar access');
     }
     return { ...history, entries: { ...history.entries,
         [uid]: { ...entry, state: 'excluded', excludedReason: 'verified-google-deletion' } } };
