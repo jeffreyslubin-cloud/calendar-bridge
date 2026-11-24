@@ -10,6 +10,10 @@ const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 function makeStore(fetchImpl, token, journal, uuid) {
     if (typeof fetchImpl !== 'function' || !token || !journal ||
         typeof uuid !== 'function') throw Error('Missing Drive journal dependencies');
+    // Only cache immutable snapshots when Drive supplies a content checksum
+    // and modification timestamp. If metadata changes, stop rather than
+    // silently trusting stale history.
+    const snapshotsCache=new Map();
     async function request(url, options = {}) {
         const response = await fetchImpl(url, {
             ...options, cache: 'no-store',
@@ -25,7 +29,7 @@ function makeStore(fetchImpl, token, journal, uuid) {
             const url = new URL(BASE);
             url.searchParams.set('spaces', 'appDataFolder');
             url.searchParams.set('q', "name contains '" + PREFIX + "' and trashed = false");
-            url.searchParams.set('fields', 'nextPageToken,files(id,name,mimeType)');
+            url.searchParams.set('fields', 'nextPageToken,files(id,name,mimeType,modifiedTime,md5Checksum,size)');
             url.searchParams.set('pageSize', '1000');
             if (next) url.searchParams.set('pageToken', next);
             const page = await (await request(url.toString())).json();
@@ -42,8 +46,20 @@ function makeStore(fetchImpl, token, journal, uuid) {
         const snapshots = [];
         for (const f of entries) {
             if (!f.id) throw Error('Invalid snapshot file ID');
-            const data = await (await request(BASE + '/' + encodeURIComponent(f.id) + '?alt=media')).json();
-            snapshots.push({fileId: f.id, data});
+            const signature=f.modifiedTime && f.md5Checksum ?
+                [f.modifiedTime,f.md5Checksum,String(f.size||'')].join(':') : null;
+            const prior=snapshotsCache.get(f.id);
+            if(prior && signature && prior.signature!==signature)
+                throw Error('Previously saved history snapshot was modified; recovery required');
+            let data;
+            if(prior && signature && prior.signature===signature) {
+                data=prior.data;
+            } else {
+                data=await (await request(BASE + '/' + encodeURIComponent(f.id) +
+                    '?alt=media')).json();
+                if(signature)snapshotsCache.set(f.id,{signature,data});
+            }
+            snapshots.push({fileId:f.id,data});
         }
         return journal.resolve(snapshots, accountId, calendarId);
     }
