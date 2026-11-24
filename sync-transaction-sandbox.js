@@ -5,9 +5,10 @@
 (function(root) {
 'use strict';
 function makeTransaction({store,planner,journal,safety,recovery,intent,reader,writer,
-    accountId,calendarId,subtle}) {
+    accountId,calendarId,subtle,writeGate,authorization}) {
     if(!store||!planner||!journal||!safety||!recovery||!intent||
-        !reader||!writer||!accountId||!calendarId||calendarId==='primary'||!subtle)
+        !reader||!writer||!accountId||!calendarId||calendarId==='primary'||!subtle||
+        !writeGate||typeof writeGate.assertAuthorized!=='function')
         throw Error('Incomplete transaction dependencies');
     let busy=false;
     async function withLock(fn) {
@@ -51,6 +52,12 @@ function makeTransaction({store,planner,journal,safety,recovery,intent,reader,wr
                 !Array.isArray(googleEvents)||!Array.isArray(outlookEvents)||
                 outlookEvents.filter(e=>e.uid===source?.uid).length!==1)
                 throw Error('Incomplete or ambiguous calendar scans');
+            // Authorization is checked before touching history. This sandbox
+            // does not mint receipts or fetch backup data by itself.
+            writeGate.assertAuthorized(authorization,accountId,calendarId);
+            if(authorization.scan.outlookCount!==outlookEvents.length||
+                authorization.scan.googleCount!==googleEvents.length)
+                throw Error('Calendar scan does not match approved receipt');
             let loaded=await load();
             const plan=planner.plan(outlookEvents,googleEvents,loaded.history,{
                 calendarId,completeOutlook:true,completeGoogle:true
