@@ -11,7 +11,9 @@ function validHistory(h) {
         throw new Error('Invalid sync history or missing account/calendar identity');
     }
     for (const [uid, value] of Object.entries(h.entries)) {
-        if (!uid || !value || !['active', 'excluded'].includes(value.state) ||
+        if (!uid || !value || !['active', 'excluded', 'pending'].includes(value.state) ||
+            (value.state === 'pending' && (!value.googleId || !value.requested ||
+                !value.requested.start || !value.requested.end || !value.requested.summary)) ||
             (value.state === 'active' && (!value.googleId || !value.lastSynced))) {
             throw new Error('Invalid sync history entry');
         }
