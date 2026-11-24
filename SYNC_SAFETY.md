@@ -52,6 +52,12 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - This protects a **single authorized browser installation**, not unrestricted multi-device synchronization. Do not enable live writes on multiple installations; a future controlled owner-transfer workflow would be necessary.
 - The identity and lock modules are **not wired into the live popup**. This entire section remains a test-only foundation for future controlled writes.
 
+## History-read performance protection
+
+- `drive-journal.js` now caches unchanged history snapshot bodies within an active session when Drive provides `modifiedTime` and `md5Checksum`. Each operation still relists the hidden folder and validates the full parent chain; modifications to previously cached files cause a hard stop.
+- `test/drive-journal-cache.test.js` checks that an eight-snapshot sequence requires only eight media downloads rather than repeatedly redownloading old generations, and that modification of an earlier snapshot is rejected.
+- The first load after a browser restart still downloads the complete chain. Snapshot growth, garbage collection and chain-compaction policies are not yet implemented; do not run unattended or high-volume writes before those are addressed.
+
 ## Required invariants before enabling real sync
 
 1. Never write to `primary` by default. Require explicit selection of the dedicated destination calendar, display its name and ID, and confirm once.
