@@ -5,16 +5,17 @@
 (function(root) {
 'use strict';
 function makeTransaction({store,planner,journal,safety,recovery,intent,reader,writer,
-    accountId,calendarId,subtle,writeGate,authorization}) {
+    accountId,calendarId,subtle,writeGate,authorization,deviceId,runExclusive}) {
     if(!store||!planner||!journal||!safety||!recovery||!intent||
         !reader||!writer||!accountId||!calendarId||calendarId==='primary'||!subtle||
-        !writeGate||typeof writeGate.assertAuthorized!=='function')
+        !writeGate||typeof writeGate.assertAuthorized!=='function'||
+        !deviceId||typeof runExclusive!=='function')
         throw Error('Incomplete transaction dependencies');
     let busy=false;
     async function withLock(fn) {
         if(busy)throw Error('Sync already in progress in this process');
         busy=true;
-        try {return await fn();} finally {busy=false;}
+        try {return await runExclusive(accountId,calendarId,fn);} finally {busy=false;}
     }
     async function load() {
         const state=await store.read(accountId,calendarId);
@@ -23,6 +24,8 @@ function makeTransaction({store,planner,journal,safety,recovery,intent,reader,wr
         journal.validHistory(state.history);
         planner.validateHistory(state.history,calendarId);
         if(state.history.accountId!==accountId)throw Error('Wrong account');
+        if(state.history.writerDeviceId!==deviceId)
+            throw Error('History belongs to another browser installation');
         return state;
     }
     async function append(oldState,updated) {
