@@ -7,6 +7,7 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - `sync-planner.js`: pure planner with versioned, per-calendar history, one-to-one identity matching, conservative one-time adoption, duplicate/ambiguous matching detection, manual Google edit preservation, and exclusion tombstones.
 - `drive-history.js`: original one-file appDataFolder reader and create-once bootstrap; used by the read-only connection check.\n- `history-journal.js` and `drive-journal.js`: **unwired** immutable snapshot history prototype. A complete chain allows recovery and multiple competing branches fail closed; it does not yet provide atomic multi-device locking or a completed writer.
 - `test/sync-planner.test.js` and `test/drive-history.test.js`: logic and mocked-API tests.
+- `sync-history-sandbox.js` and `test/sync-history-sandbox.test.js`: **not loaded into Chrome**. Simulates loading a Drive history, adopting a uniquely matched pre-existing Google event, verifying a deletion, persisting each history version, and recovering the exclusion. The test uses only a mocked Drive API and performs **no Google Calendar writes**. The sandbox intentionally cannot initialize missing history or write to the primary calendar.
 - GitHub Actions runs Node tests on changes to this branch.
 
 ## Required invariants before enabling real sync
@@ -30,8 +31,7 @@ Past Google-side deletions cannot be reconstructed reliably from the current Out
 
 ## Google setup still required
 
-Enable **Google Drive API** in the existing Cloud project, and authorize
-`https://www.googleapis.com/auth/drive.appdata` for the Chrome extension OAuth client. Do not change the current extension's permissions until the integrated flow is ready to test.
+**Completed:** Google Drive API enabled, `drive.appdata` authorized, and the separate live diagnostic file was successfully created and read. This does not authorize production synchronization yet.
 
 ## Isolated live Drive diagnostic (opt-in)
 
