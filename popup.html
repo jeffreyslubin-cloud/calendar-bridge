@@ -20,6 +20,8 @@
         <p id="googleConnectStatus" class="google-connect-status" role="status" aria-live="polite">Not connected. Connection test only; no events will be changed.</p>
         <button id="driveCheckButton" type="button" class="google-connect-button">Check Drive storage (read only)</button>
         <p id="driveCheckStatus" class="google-connect-status" role="status" aria-live="polite">Storage not checked.</p>
+        <button id="driveDiagnosticButton" type="button" class="google-connect-button">Test Drive save and read</button>
+        <p id="driveDiagnosticStatus" class="google-connect-status" role="status" aria-live="polite">Creates one test-only hidden file; never edits calendars or sync history.</p>
       </section>
       <div class="form-scroll">
         <div class="field">
@@ -164,5 +166,7 @@
     <script src="google-preview.js"></script>
     <script src="drive-history.js"></script>
     <script src="drive-check.js"></script>
+    <script src="storage-diagnostic.js"></script>
+    <script src="storage-diagnostic-ui.js"></script>
 </body>
 </html>
