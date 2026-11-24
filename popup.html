@@ -18,10 +18,13 @@
         <div class="field-label">Google Calendar connection</div>
         <button id="googleConnectButton" type="button" class="google-connect-button">Connect Google Calendar</button>
         <p id="googleConnectStatus" class="google-connect-status" role="status" aria-live="polite">Not connected. Connection test only; no events will be changed.</p>
-        <button id="driveCheckButton" type="button" class="google-connect-button">Check Drive storage (read only)</button>
-        <p id="driveCheckStatus" class="google-connect-status" role="status" aria-live="polite">Storage not checked.</p>
-        <button id="driveDiagnosticButton" type="button" class="google-connect-button">Test Drive save and read</button>
-        <p id="driveDiagnosticStatus" class="google-connect-status" role="status" aria-live="polite">Creates one test-only hidden file; never edits calendars or sync history.</p>
+        <details class="advanced-diagnostics">
+          <summary>Advanced storage diagnostics</summary>
+          <button id="driveCheckButton" type="button" class="google-connect-button">Check Drive storage (read only)</button>
+          <p id="driveCheckStatus" class="google-connect-status" role="status" aria-live="polite">Storage not checked.</p>
+          <button id="driveDiagnosticButton" type="button" class="google-connect-button">Test Drive save and read</button>
+          <p id="driveDiagnosticStatus" class="google-connect-status" role="status" aria-live="polite">Creates one test-only hidden file; never edits calendars or sync history.</p>
+        </details>
       </section>
       <div class="form-scroll">
         <div class="field">
