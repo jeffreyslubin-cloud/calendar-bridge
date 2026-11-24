@@ -1,0 +1,33 @@
+const assert=require('assert');
+const {webcrypto}=require('crypto');
+const Reader=require('../sync-google-read-adapter.js');
+const Safety=require('../sync-create-safety.js');
+(async()=>{
+  const id=await Safety.eventId('acct','work','uid-1',webcrypto.subtle);
+  const calls=[];
+  let status=200,returnedId=id;
+  const fetchMock=async(url,opts)=>{
+    calls.push({url,opts});
+    return {ok:status>=200&&status<300,status,json:async()=>({id:returnedId})};
+  };
+  const reader=Reader.makeReader(fetchMock,'token','work');
+  let result=await reader.getById(id);
+  assert.strictEqual(result.state,'found');
+  assert.strictEqual(result.event.id,id);
+  status=404;result=await reader.getById(id);
+  assert.strictEqual(result.state,'not-found-unconfirmed');
+  status=410;result=await reader.getById(id);
+  assert.strictEqual(result.state,'not-found-unconfirmed');
+  status=403;
+  await assert.rejects(reader.getById(id),/HTTP 403/);
+  status=200;returnedId='wrong';
+  await assert.rejects(reader.getById(id),/different event/);
+  await assert.rejects(reader.getById('abc'),/Unexpected/);
+  assert.throws(()=>Reader.makeReader(fetchMock,'token','primary'),/Invalid/);
+  assert(calls.every(c=>c.opts.method==='GET'&&c.opts.cache==='no-store'));
+  assert(calls.every(c=>c.opts.headers.Authorization==='Bearer token'));
+  assert.strictEqual(typeof reader.insert,'undefined');
+  console.log('✓ GET-only reader distinguishes found from unconfirmed 404/410');
+  console.log('✓ wrong identity, 403, primary calendar and invalid IDs rejected');
+  console.log('All Google read adapter tests passed.');
+})().catch(e=>{console.error(e);process.exitCode=1;});
