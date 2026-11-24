@@ -45,16 +45,20 @@ function makeTransaction({store,planner,journal,safety,recovery,intent,reader,wr
             throw Error('Finalized mapping not durably verified');
         return {state:'created-and-mapped',headId:confirmed.head.fileId};
     }
-    async function create(source,googleEvents,scan) {
+    async function create(source,outlookEvents,googleEvents,scan) {
         return withLock(async()=>{
             if(scan?.completeOutlook!==true||scan?.completeGoogle!==true||
-                !Array.isArray(googleEvents))throw Error('Incomplete calendar scans');
+                !Array.isArray(googleEvents)||!Array.isArray(outlookEvents)||
+                outlookEvents.filter(e=>e.uid===source?.uid).length!==1)
+                throw Error('Incomplete or ambiguous calendar scans');
             let loaded=await load();
-            const plan=planner.plan([source],googleEvents,loaded.history,{
+            const plan=planner.plan(outlookEvents,googleEvents,loaded.history,{
                 calendarId,completeOutlook:true,completeGoogle:true
             });
-            if(plan.counts.add!==1||Object.values(plan.counts).some((n,i)=>
-                n!==0&&i!==0))throw Error('Planner refused appointment creation');
+            if(plan.actions.add.filter(e=>e.uid===source.uid).length!==1||
+                plan.actions.ambiguous.length||plan.actions.conflict.length||
+                plan.actions.verifyMissing.length)
+                throw Error('Planner refused appointment creation');
             const proposed=await safety.prepareAdd(source,loaded.history,{
                 accountId,calendarId,completeOutlook:true,completeGoogle:true,
                 expectedHistoryFileId:loaded.head.fileId,plan,googleEvents,subtle
