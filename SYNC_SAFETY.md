@@ -5,7 +5,8 @@ Status: **prototype only; no calendar-writing path is enabled.**
 ## What exists now
 
 - `sync-planner.js`: pure planner with versioned, per-calendar history, one-to-one identity matching, conservative one-time adoption, duplicate/ambiguous matching detection, manual Google edit preservation, and exclusion tombstones.
-- `drive-history.js`: original one-file appDataFolder reader and create-once bootstrap; used by the read-only connection check.\n- `history-journal.js` and `drive-journal.js`: **unwired** immutable snapshot history prototype. A complete chain allows recovery and multiple competing branches fail closed; it does not yet provide atomic multi-device locking or a completed writer.
+- `drive-history.js`: original one-file appDataFolder reader and create-once bootstrap; used by the read-only connection check.
+- `history-journal.js` and `drive-journal.js`: **unwired** immutable snapshot history prototype. A complete chain allows recovery and multiple competing branches fail closed; it does not yet provide atomic multi-device locking or a completed writer.
 - `test/sync-planner.test.js` and `test/drive-history.test.js`: logic and mocked-API tests.
 - `sync-history-sandbox.js` and `test/sync-history-sandbox.test.js`: **not loaded into Chrome**. Simulates loading a Drive history, adopting a uniquely matched pre-existing Google event, verifying a deletion, persisting each history version, and recovering the exclusion. The test uses only a mocked Drive API and performs **no Google Calendar writes**. The sandbox intentionally cannot initialize missing history or write to the primary calendar.
 - `sync-create-recovery.js` is an **unwired read-only** Google Calendar event GET-by-ID check for interrupted creation attempts. It requires the expected deterministic ID and verifies ownership markers, event fields, and manual edits. A missing (404/410) event is **not** permission to create; ownership mismatches, recurring instances, edits, and non-success HTTP responses stop. The independent mocked tests are in `test/sync-create-recovery.test.js`.
@@ -27,6 +28,14 @@ Status: **prototype only; no calendar-writing path is enabled.**
 - `sync-write-gate.js` requires explicit destination approval, a matching non-primary Google calendar with write access, a verified backup receipt, and a complete source/destination scan receipt. The transaction sandbox refuses to create even a pending record without these inputs and rejects a selected appointment if its fields differ from the full scan.
 - A future real UI must **actually generate and verify** the destination metadata, backup and scan receipts. The mocked receipts in unit tests are not security attestations, and do not authorize production use.
 - Tests: `test/sync-write-gate.test.js` and extended `test/sync-transaction-sandbox.test.js`. Their GitHub Actions outcome has not been independently confirmed.
+
+## Backup and first-run integration, now available on development branch
+
+- `google-backup.js` reads all selected Google Calendar events through paginated `events.list` requests with `singleEvents=false`, preserving recurring masters and no time-window cap. It hashes the complete JSON payload using SHA-256 and verifies the checksum. `google-backup-ui.js` adds a **Download Google calendar backup** button; it only downloads local JSON and makes no calendar changes.
+- `sync-backup-verify.js` and its popup file control verify a *saved* JSON backup locally, check the checksum, and insist that the calendar identity matches the selected **non-primary** destination. This does not issue production write permission.
+- `sync-first-run.js` is **not wired to the extension**. Its mocked tests initialize history exactly once for an explicitly approved, empty destination whose verified backup also shows zero events. It refuses to overwrite pre-existing history or initialize against an occupied calendar.
+- Google OAuth now also requests `calendar.calendarlist.readonly`, needed for calendar summary, timezone and accessRole metadata. This will require an updated Google consent authorization when installed. Only `calendar.events` and `drive.appdata` were in the previously tested Chrome version.
+- Tests for these modules run in the GitHub Actions suite. **The newly added backup and verification code has not yet been exercised against a live user calendar.**
 
 ## Required invariants before enabling real sync
 
